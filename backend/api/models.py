@@ -139,3 +139,18 @@ class Document(models.Model):
     
     def __str__(self):
         return f"{self.type_document} — {self.demande.reference}"
+    
+ROLE_CHOICES = [
+    ('admin', 'Administrateur'),
+    ('agent', 'Agent Social'),
+    ('citoyen', 'Citoyen'),
+    ('beneficiaire', 'Bénéficiaire'),
+]
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='citoyen')
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_role_display()}"    
+    

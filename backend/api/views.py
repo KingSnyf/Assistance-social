@@ -1,136 +1,89 @@
 # api/views.py
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils import timezone
+
 from .models import Beneficiaire, Demande, Intervention, Document
 from .serializers import (
-    BeneficiaireSerializer, DemandeSerializer, 
+    BeneficiaireSerializer, DemandeSerializer,
     InterventionSerializer, DocumentSerializer
 )
 
 
-class IsOwnerOrReadOnly(permissions.BasePermission):
-    """Permission personnalisée : lecture publique, écriture réservée au propriétaire"""
-    def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return obj.owner == request.user or request.user.is_staff
+class BaseViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+
+    def get_role(self):
+        user = self.request.user
+        return getattr(user.profile, 'role', 'citoyen') if hasattr(user, 'profile') else 'citoyen'
 
 
-class BeneficiaireViewSet(viewsets.ModelViewSet):
-    """ViewSet CRUD pour Beneficiaire"""
+class BeneficiaireViewSet(BaseViewSet):
     serializer_class = BeneficiaireSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    queryset = Beneficiaire.objects.select_related('user')
     filterset_fields = ['pays_residence', 'nationalite']
-    search_fields = ['nom', 'prenom', 'email', 'telephone']
-    ordering_fields = ['nom', 'created_at']
+    search_fields = ['nom', 'prenom', 'email']
     ordering = ['-created_at']
-    
+
     def get_queryset(self):
-        """Filtrage par propriétaire (CONTRAINTE M. KINKEU)"""
-        queryset = Beneficiaire.objects.all()
-        if not self.request.user.is_superuser:
-            # Un agent/citoyen ne voit que ses bénéficiaires liés
-            queryset = queryset.filter(user=self.request.user)
-        return queryset
-    
-    def perform_create(self, serializer):
-        """Lier automatiquement le bénéficiaire à l'utilisateur créateur"""
-        serializer.save(user=self.request.user)
+        qs = super().get_queryset()
+        role = self.get_role()
+        if role == 'admin': return qs
+        if role == 'agent': return qs
+        return qs.filter(user=self.request.user)
 
 
-class DemandeViewSet(viewsets.ModelViewSet):
-    """ViewSet CRUD pour Demande avec actions personnalisées"""
+class DemandeViewSet(BaseViewSet):
     serializer_class = DemandeSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['statut', 'type_aide', 'urgence', 'agent_assigne']
-    search_fields = ['reference', 'motif', 'beneficiaire__nom', 'beneficiaire__prenom']
-    ordering_fields = ['date_soumission', 'montant_demande', 'urgence']
+    queryset = Demande.objects.select_related('beneficiaire', 'agent_assigne', 'owner')
+    filterset_fields = ['statut', 'type_aide', 'urgence']
+    search_fields = ['reference', 'beneficiaire__nom']
     ordering = ['-date_soumission']
-    
+
     def get_queryset(self):
-        """Filtrage par propriétaire (CONTRAINTE M. KINKEU)"""
-        queryset = Demande.objects.select_related('beneficiaire', 'agent_assigne')
-        if not self.request.user.is_superuser:
-            # Un utilisateur ne voit que SES demandes (owner) OU celles qui lui sont assignées
-            queryset = queryset.filter(owner=self.request.user) | queryset.filter(agent_assigne=self.request.user)
-        return queryset
-    
+        qs = super().get_queryset()
+        role = self.get_role()
+        if role == 'admin': return qs
+        if role == 'agent': return qs.filter(agent_assigne=self.request.user) | qs.filter(statut='soumise')
+        if role == 'citoyen': return qs.filter(owner=self.request.user)
+        return qs.filter(beneficiaire__user=self.request.user)
+
     def perform_create(self, serializer):
-        """Attribution automatique de l'owner"""
         serializer.save(owner=self.request.user)
-    
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+
+    @action(detail=True, methods=['post'])
     def approuver(self, request, pk=None):
-        """Action personnalisée : approuver une demande"""
         demande = self.get_object()
         if demande.statut != 'soumise':
-            return Response({'error': 'Seules les demandes soumises peuvent être approuvées.'}, status=400)
+            return Response({'error': 'Seules les demandes soumises peuvent être approuvées.'}, status=status.HTTP_400_BAD_REQUEST)
         demande.statut = 'approuvee'
         demande.agent_assigne = request.user
+        demande.date_traitement = timezone.now()
         demande.save()
-        return Response({'message': f'Demande {demande.reference} approuvée.'})
-    
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+        return Response({'message': 'Demande approuvée.'})
+
+    @action(detail=True, methods=['post'])
     def rejeter(self, request, pk=None):
-        """Action personnalisée : rejeter une demande"""
         demande = self.get_object()
         if demande.statut != 'soumise':
-            return Response({'error': 'Seules les demandes soumises peuvent être rejetées.'}, status=400)
+            return Response({'error': 'Seules les demandes soumises peuvent être rejetées.'}, status=status.HTTP_400_BAD_REQUEST)
         demande.statut = 'rejetee'
         demande.agent_assigne = request.user
+        demande.date_traitement = timezone.now()
         demande.save()
-        return Response({'message': f'Demande {demande.reference} rejetée.'})
-    
-    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated])
-    def documents(self, request, pk=None):
-        """Action personnalisée : lister les documents d'une demande"""
-        demande = self.get_object()
-        documents = Document.objects.filter(demande=demande)
-        serializer = DocumentSerializer(documents, many=True, context={'request': request})
-        return Response(serializer.data)
+        return Response({'message': 'Demande rejetée.'})
 
 
-class InterventionViewSet(viewsets.ModelViewSet):
-    """ViewSet CRUD pour Intervention"""
+class InterventionViewSet(BaseViewSet):
     serializer_class = InterventionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['type_intervention', 'date_realisation']
-    ordering_fields = ['date_realisation', 'montant_accorde']
+    queryset = Intervention.objects.select_related('demande')
     ordering = ['-date_realisation']
-    
-    def get_queryset(self):
-        """Filtrage par propriétaire via la demande liée"""
-        queryset = Intervention.objects.select_related('demande__beneficiaire')
-        if not self.request.user.is_superuser:
-            queryset = queryset.filter(
-                demande__owner=self.request.user
-            ) | queryset.filter(
-                demande__agent_assigne=self.request.user
-            )
-        return queryset
 
 
-class DocumentViewSet(viewsets.ModelViewSet):
-    """ViewSet CRUD pour Document"""
+class DocumentViewSet(BaseViewSet):
     serializer_class = DocumentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['verifie', 'type_document']
-    ordering_fields = ['date_upload']
+    queryset = Document.objects.select_related('demande')
     ordering = ['-date_upload']
-    
-    def get_queryset(self):
-        """Filtrage par propriétaire via la demande liée"""
-        queryset = Document.objects.select_related('demande')
-        if not self.request.user.is_superuser:
-            queryset = queryset.filter(
-                demande__owner=self.request.user
-            ) | queryset.filter(
-                demande__agent_assigne=self.request.user
-            )
-        return queryset

@@ -1,8 +1,28 @@
-# api/admin.py
 from django.contrib import admin
-from django.utils.html import format_html
-from django.utils import timezone
-from .models import Beneficiaire, Demande, Intervention, Document
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import Profile, Beneficiaire, Demande, Intervention, Document
+
+# Inline pour afficher le profile dans User
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
+    verbose_name_plural = 'Profile'
+
+# Désenregistrement et réenregistrement
+class UserAdmin(BaseUserAdmin):
+    inlines = (ProfileInline,)
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
+
+# OU simplement enregistrer Profile séparément
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ['user', 'role', 'get_email']
+    
+    def get_email(self, obj):
+        return obj.user.email
 
 
 @admin.register(Beneficiaire)
