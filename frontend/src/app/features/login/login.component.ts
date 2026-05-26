@@ -14,22 +14,12 @@ import { CommonModule } from '@angular/common';
       <div class="login-container">
         <div class="login-card">
           <div class="brand-header">
-            <div class="logo-circle">🌍</div>
+            <div class="logo-circle"></div>
             <h1 class="brand-name">SocialCare</h1>
             <p class="brand-tagline">Plateforme d'Assistance Sociale Internationale</p>
           </div>
 
           <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-            <div class="form-group">
-              <label class="form-label">Rôle</label>
-              <select formControlName="role" class="form-select">
-                <option value="agent">👔 Agent Social</option>
-                <option value="citoyen">🧑 Citoyen</option>
-                <option value="beneficiaire">🤝 Bénéficiaire</option>
-                <option value="admin">️ Administrateur</option>
-              </select>
-            </div>
-
             <div class="form-group">
               <label class="form-label" for="username">Identifiant</label>
               <input id="username" formControlName="username" type="text" class="form-input" placeholder="Votre username" [class.is-invalid]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
@@ -67,9 +57,8 @@ import { CommonModule } from '@angular/common';
     .login-form { margin-top: 20px; }
     .form-group { margin-bottom: 16px; }
     .form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: #334155; }
-    .form-input, .form-select { width: 100%; padding: 11px 14px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 14px; color: #0F172A; background: #F8FAFC; transition: all 0.2s; }
-    .form-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748B' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-    .form-input:focus, .form-select:focus { outline: none; border-color: #0EA5E9; background: #FFF; box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
+    .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 14px; color: #0F172A; background: #F8FAFC; transition: all 0.2s; }
+    .form-input:focus { outline: none; border-color: #0EA5E9; background: #FFF; box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
     .form-input.is-invalid { border-color: #EF4444; background: #FEF2F2; }
     .error-message { color: #EF4444; font-size: 12px; margin-top: 5px; }
     .alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; }
@@ -93,22 +82,25 @@ export class LoginComponent {
   constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {
     this.loginForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      role: ['citoyen', [Validators.required]]
+      password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
   onSubmit(): void {
-    if (this.loginForm.invalid) { this.loginForm.markAllAsTouched(); return; }
-    this.loading = true; this.error = '';
-    
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading = true;
+    this.error = '';
+
     this.auth.login(this.loginForm.value).subscribe({
       next: () => {
         this.router.navigate(['/dashboard']);
       },
-      // ✅ TYPE STRICT : HttpErrorResponse
-      error: (error: HttpErrorResponse) => {
-        this.error = error.error?.detail || 'Identifiants ou rôle incorrects.';
+      error: (err: HttpErrorResponse) => {
+        this.error = err.error?.detail || 'Identifiants incorrects. Veuillez réessayer.';
         this.loading = false;
       }
     });

@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.html import format_html
+from django.utils import timezone
 from .models import Profile, Beneficiaire, Demande, Intervention, Document
 
 # Inline pour afficher le profile dans User
