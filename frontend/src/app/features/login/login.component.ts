@@ -11,73 +11,113 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <div class="login-page">
-      <div class="login-container">
+      <div class="login-left">
+        <div class="left-content">
+          <div class="brand-mark">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="12" fill="white" fill-opacity="0.15"/>
+              <path d="M20 8C13.373 8 8 13.373 8 20s5.373 12 12 12 12-5.373 12-12S26.627 8 20 8zm0 5a3 3 0 110 6 3 3 0 010-6zm0 15.5c-3.5 0-6.61-1.79-8.45-4.5.04-2.8 5.63-4.33 8.45-4.33 2.81 0 8.41 1.53 8.45 4.33A9.94 9.94 0 0120 28.5z" fill="white"/>
+            </svg>
+            <span>SocialCare</span>
+          </div>
+          <div class="hero-text">
+            <h1>Gérer l'aide sociale,<br><em>simplement.</em></h1>
+            <p>Plateforme unifiée pour le suivi des bénéficiaires, la gestion des demandes d'aide et le pilotage des interventions sociales.</p>
+          </div>
+          <div class="features-list">
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <span>Suivi en temps réel des dossiers</span>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <span>Accès multi-rôles sécurisé</span>
+            </div>
+            <div class="feature-item">
+              <div class="feature-dot"></div>
+              <span>Gestion des interventions</span>
+            </div>
+          </div>
+        </div>
+        <div class="left-footer">Institut Universitaire Saint Jean · 2025–2026</div>
+      </div>
+
+      <div class="login-right">
         <div class="login-card">
-          <div class="brand-header">
-            <div class="logo-circle"></div>
-            <h1 class="brand-name">SocialCare</h1>
-            <p class="brand-tagline">Plateforme d'Assistance Sociale Internationale</p>
+          <div class="card-header">
+            <h2>Connexion</h2>
+            <p>Accédez à votre espace personnel</p>
           </div>
 
-          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
-            <div class="form-group">
-              <label class="form-label" for="username">Identifiant</label>
-              <input id="username" formControlName="username" type="text" class="form-input" placeholder="Votre username" [class.is-invalid]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
-              <div class="error-message" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">Identifiant requis</div>
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form" novalidate>
+            <div class="form-group" [class.has-error]="isInvalid('username')">
+              <label for="username">Identifiant</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input id="username" formControlName="username" type="text"
+                       placeholder="Votre identifiant"
+                       autocomplete="username">
+              </div>
+              <span class="field-error" *ngIf="isInvalid('username')">
+                {{ loginForm.get('username')?.errors?.['required'] ? 'Identifiant requis' : 'Minimum 3 caractères' }}
+              </span>
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="password">Mot de passe</label>
-              <input id="password" formControlName="password" type="password" class="form-input" placeholder="••••••••" [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-              <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">Mot de passe requis</div>
+            <div class="form-group" [class.has-error]="isInvalid('password')">
+              <label for="password">Mot de passe</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <input id="password" formControlName="password"
+                       [type]="showPassword ? 'text' : 'password'"
+                       placeholder="••••••••"
+                       autocomplete="current-password">
+                <button type="button" class="toggle-pw" (click)="showPassword = !showPassword" tabindex="-1">
+                  <svg *ngIf="!showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg *ngIf="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <span class="field-error" *ngIf="isInvalid('password')">
+                {{ loginForm.get('password')?.errors?.['required'] ? 'Mot de passe requis' : 'Minimum 6 caractères' }}
+              </span>
             </div>
 
-            <div class="alert alert-error" *ngIf="error">⚠️ {{ error }}</div>
+            <div class="server-error" *ngIf="serverError">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              {{ serverError }}
+            </div>
 
-            <button type="submit" class="btn btn-primary btn-block" [disabled]="loginForm.invalid || loading" [class.btn-loading]="loading">
-              <span *ngIf="loading" class="spinner"></span>
-              <span *ngIf="!loading">Se connecter →</span>
+            <button type="submit" class="btn-submit" [disabled]="loginForm.invalid || loading">
+              <span class="btn-spinner" *ngIf="loading"></span>
+              <span *ngIf="!loading">Se connecter</span>
+              <span *ngIf="loading">Connexion en cours…</span>
             </button>
           </form>
 
-          <div class="footer-note">© 2026 SocialCare — Institut Universitaire Saint Jean</div>
+          <div class="demo-credentials">
+            <span class="demo-label">Compte démo</span>
+            <code>admin / admin123</code>
+          </div>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    :host { display: block; }
-    .login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 50%, #7DD3FC 100%); padding: 20px; }
-    .login-container { width: 100%; max-width: 420px; }
-    .login-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-radius: 16px; padding: 32px 28px; box-shadow: 0 12px 32px rgba(14, 165, 233, 0.15); border: 1px solid rgba(255, 255, 255, 0.6); }
-    .brand-header { text-align: center; margin-bottom: 24px; }
-    .logo-circle { width: 52px; height: 52px; background: linear-gradient(135deg, #0EA5E9, #0284C7); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 12px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25); }
-    .brand-name { font-size: 22px; font-weight: 700; color: #0F172A; margin: 0 0 4px; }
-    .brand-tagline { font-size: 13px; color: #475569; margin: 0; }
-    .login-form { margin-top: 20px; }
-    .form-group { margin-bottom: 16px; }
-    .form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: #334155; }
-    .form-input { width: 100%; padding: 11px 14px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 14px; color: #0F172A; background: #F8FAFC; transition: all 0.2s; }
-    .form-input:focus { outline: none; border-color: #0EA5E9; background: #FFF; box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
-    .form-input.is-invalid { border-color: #EF4444; background: #FEF2F2; }
-    .error-message { color: #EF4444; font-size: 12px; margin-top: 5px; }
-    .alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-primary { background: linear-gradient(135deg, #0EA5E9, #0284C7); color: #FFF; box-shadow: 0 4px 10px rgba(2,132,199,0.25); }
-    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(2,132,199,0.35); }
-    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
-    .btn-block { width: 100%; margin-top: 4px; }
-    .btn-loading { position: relative; color: transparent; }
-    .spinner { position: absolute; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #FFF; border-radius: 50%; animation: spin 0.6s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .footer-note { text-align: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid #E2E8F0; font-size: 11px; color: #64748B; }
-    @media (max-width: 480px) { .login-card { padding: 24px 16px; } }
-  `]
+  styleUrls: ['./login.component.css']
 })
 export class LoginComponent {
   loginForm: FormGroup;
   loading = false;
-  error = '';
+  serverError = '';
+  showPassword = false;
 
   constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {
     this.loginForm = this.fb.group({
@@ -86,21 +126,23 @@ export class LoginComponent {
     });
   }
 
+  isInvalid(field: string): boolean {
+    const f = this.loginForm.get(field);
+    return !!(f?.invalid && f?.touched);
+  }
+
   onSubmit(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
-
     this.loading = true;
-    this.error = '';
+    this.serverError = '';
 
     this.auth.login(this.loginForm.value).subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard']);
-      },
+      next: () => this.router.navigate(['/dashboard']),
       error: (err: HttpErrorResponse) => {
-        this.error = err.error?.detail || 'Identifiants incorrects. Veuillez réessayer.';
+        this.serverError = err.error?.detail || 'Identifiants incorrects. Veuillez réessayer.';
         this.loading = false;
       }
     });

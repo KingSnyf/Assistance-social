@@ -1,308 +1,211 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { DemandeService, Demande } from '../../core/services/demande.service';
+
+interface StatCard {
+  label: string;
+  value: string | number;
+  icon: string;
+  color: string;
+  sub?: string;
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <header class="topbar">
-      <div>
-        <h2 class="page-title">Tableau de bord</h2>
-        <p class="page-subtitle">{{ role === 'admin' ? 'Administration système' : role === 'agent' ? 'Espace Agent' : 'Espace Citoyen' }}</p>
-      </div>
-      <div class="topbar-actions">
-        <button *ngIf="role === 'citoyen' || role === 'beneficiaire'" 
-                routerLink="/nouvelle-demande" 
-                class="btn-new">
-          ➕ Nouvelle demande
-        </button>
-        <div class="user-pill">
-          <div class="avatar">{{ username | slice:0:2 | uppercase }}</div>
-          <div class="user-info">
-            <span class="name">{{ username }}</span>
-            <span class="badge-role">{{ role | uppercase }}</span>
-          </div>
+    <div class="dashboard">
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="page-title">Tableau de bord</h1>
+          <p class="page-sub">{{ subtitleByRole }}</p>
         </div>
-      </div>
-    </header>
+        <div class="topbar-right">
+          <button *ngIf="canCreateDemande" routerLink="/nouvelle-demande" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nouvelle demande
+          </button>
+          <div class="date-pill">{{ today }}</div>
+        </div>
+      </header>
 
-    <div class="content">
-      <!-- STATS -->
-      <div class="stats-grid">
-        <ng-container *ngIf="role === 'admin'">
-          <div class="card stat"><div class="stat-icon blue">👥</div><div class="stat-info"><div class="label">Utilisateurs</div><div class="value">1 240</div></div></div>
-          <div class="card stat"><div class="stat-icon green">💰</div><div class="stat-info"><div class="label">Budget</div><div class="value">840K$</div></div></div>
-          <div class="card stat"><div class="stat-icon orange">⚙️</div><div class="stat-info"><div class="label">Agents</div><div class="value">48</div></div></div>
-          <div class="card stat"><div class="stat-icon red">📈</div><div class="stat-info"><div class="label">Efficacité</div><div class="value">94%</div></div></div>
-        </ng-container>
-        <ng-container *ngIf="role === 'agent'">
-          <div class="card stat"><div class="stat-icon blue">📋</div><div class="stat-info"><div class="label">Dossiers</div><div class="value">24</div></div></div>
-          <div class="card stat"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="label">En attente</div><div class="value">8</div></div></div>
-          <div class="card stat"><div class="stat-icon green">✅</div><div class="stat-info"><div class="label">Résolus</div><div class="value">142</div></div></div>
-          <div class="card stat"><div class="stat-icon red">🎯</div><div class="stat-info"><div class="label">Score</div><div class="value">92%</div></div></div>
-        </ng-container>
-        <ng-container *ngIf="role === 'citoyen' || role === 'beneficiaire'">
-          <div class="card stat"><div class="stat-icon blue">📂</div><div class="stat-info"><div class="label">Mes Demandes</div><div class="value">3</div></div></div>
-          <div class="card stat"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="label">En cours</div><div class="value">1</div></div></div>
-          <div class="card stat"><div class="stat-icon green">✅</div><div class="stat-info"><div class="label">Approuvées</div><div class="value">2</div></div></div>
-          <div class="card stat"><div class="stat-icon red"></div><div class="stat-info"><div class="label">Aide Reçue</div><div class="value">350$</div></div></div>
-        </ng-container>
+      <!-- LOADING -->
+      <div class="loading-state" *ngIf="loading">
+        <div class="spinner-lg"></div>
+        <span>Chargement des données…</span>
       </div>
 
-      <!-- TABLE -->
-      <div class="card table-card">
-        <div class="card-header">
-          <div>
-            <h3 class="card-title">{{ role === 'admin' ? 'Activité globale' : role === 'agent' ? 'Dossiers prioritaires' : 'Mes demandes récentes' }}</h3>
-            <p class="card-subtitle">{{ role === 'admin' ? 'Vue système' : role === 'agent' ? 'Actions requises' : 'Historique' }}</p>
+      <ng-container *ngIf="!loading">
+        <!-- STAT CARDS -->
+        <div class="stats-grid">
+          <div class="stat-card" *ngFor="let s of stats" [style.--accent]="s.color">
+            <div class="stat-icon" [innerHTML]="s.icon"></div>
+            <div class="stat-body">
+              <div class="stat-value">{{ s.value }}</div>
+              <div class="stat-label">{{ s.label }}</div>
+              <div class="stat-sub" *ngIf="s.sub">{{ s.sub }}</div>
+            </div>
           </div>
-          <button class="btn-outline" [routerLink]="role === 'citoyen' || role === 'beneficiaire' ? '/mes-demandes' : '/demandes'">Voir tout →</button>
         </div>
-        <div class="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th>Réf.</th>
-                <th *ngIf="role === 'citoyen' || role === 'beneficiaire'">Type</th>
-                <th *ngIf="role !== 'citoyen' && role !== 'beneficiaire'">Bénéficiaire</th>
-                <th>Statut</th>
-                <th>Date</th>
-                <th class="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="mono">#SC-4821</td>
-                <td *ngIf="role === 'citoyen' || role === 'beneficiaire'">Aide financière</td>
-                <td *ngIf="role !== 'citoyen' && role !== 'beneficiaire'">Marie Koné</td>
-                <td><span class="badge status-warning">En cours</span></td>
-                <td class="text-muted">15 Jan 2025</td>
-                <td class="text-right"><button class="btn-sm">Détail</button></td>
-              </tr>
-              <tr>
-                <td class="mono">#SC-4820</td>
-                <td *ngIf="role === 'citoyen' || role === 'beneficiaire'">Logement</td>
-                <td *ngIf="role !== 'citoyen' && role !== 'beneficiaire'">Ibrahim Diallo</td>
-                <td><span class="badge status-success">Approuvée</span></td>
-                <td class="text-muted">14 Jan 2025</td>
-                <td class="text-right"><button class="btn-sm">Détail</button></td>
-              </tr>
-            </tbody>
-          </table>
+
+        <!-- RECENT DEMANDES TABLE -->
+        <div class="table-card">
+          <div class="table-header">
+            <div>
+              <h2>{{ tableTitle }}</h2>
+              <p>{{ tableSubtitle }}</p>
+            </div>
+            <a [routerLink]="tableLink" class="btn-outline-sm">Voir tout →</a>
+          </div>
+
+          <!-- empty -->
+          <div class="empty-state" *ngIf="recentDemandes.length === 0">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <p>Aucune demande à afficher pour le moment.</p>
+          </div>
+
+          <!-- table -->
+          <div class="table-wrap" *ngIf="recentDemandes.length > 0">
+            <table>
+              <thead>
+                <tr>
+                  <th>Référence</th>
+                  <th *ngIf="isAdmin">Bénéficiaire</th>
+                  <th>Type d'aide</th>
+                  <th>Montant</th>
+                  <th>Urgence</th>
+                  <th>Statut</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of recentDemandes">
+                  <td><span class="ref-badge">{{ d.reference }}</span></td>
+                  <td *ngIf="isAdmin">{{ (d.beneficiaire_prenom || '') + ' ' + (d.beneficiaire_nom || '') }}</td>
+                  <td>{{ typeAideLabel(d.type_aide) }}</td>
+                  <td class="amount">{{ d.montant_demande | number:'1.0-0' }} $</td>
+                  <td><span class="badge urgence-{{ d.urgence }}">{{ urgenceLabel(d.urgence) }}</span></td>
+                  <td><span class="badge statut-{{ d.statut }}">{{ statutLabel(d.statut) }}</span></td>
+                  <td class="date-cell">{{ d.date_soumission | date:'dd MMM yyyy' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      </ng-container>
     </div>
   `,
-  styles: [`
-    :host { display: block; overflow-y: auto; }
-    header { height: 64px; background: #FFFFFF; border-bottom: 1px solid #E1E8ED; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-    .page-title { font-size: 18px; font-weight: 700; color: #0F172A; margin: 0; }
-    .page-subtitle { font-size: 13px; color: #64748B; margin-top: 2px; }
-    .topbar-actions { display: flex; align-items: center; gap: 16px; }
-    .btn-new { background: #2563EB; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s; }
-    .btn-new:hover { background: #1D4ED8; transform: translateY(-1px); }
-    .user-pill { display: flex; align-items: center; gap: 12px; padding: 6px 16px 6px 6px; background: #F8FAFC; border: 1px solid #E1E8ED; border-radius: 99px; }
-    .avatar { width: 32px; height: 32px; background: #2563EB; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
-    .user-info { display: flex; flex-direction: column; }
-    .name { font-size: 13px; font-weight: 600; color: #0F172A; }
-    .badge-role { font-size: 10px; font-weight: 700; color: #2563EB; text-transform: uppercase; }
-    .content { padding: 32px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
-    .card { background: #FFFFFF; border: 1px solid #E1E8ED; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-    .card.stat { display: flex; align-items: center; gap: 16px; }
-    .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-    .stat-icon.blue { background: #EFF6FF; } .stat-icon.green { background: #F0FDF4; } .stat-icon.orange { background: #FFFBEB; } .stat-icon.red { background: #FEF2F2; }
-    .stat-info .label { font-size: 12px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-info .value { font-size: 24px; font-weight: 700; color: #0F172A; margin-top: 4px; }
-    .card.table-card { padding: 0; overflow: hidden; }
-    .card-header { padding: 20px 24px; border-bottom: 1px solid #F0F4F8; display: flex; justify-content: space-between; align-items: center; }
-    .card-title { font-size: 16px; font-weight: 700; color: #0F172A; margin: 0; }
-    .card-subtitle { font-size: 13px; color: #64748B; margin: 4px 0 0; }
-    .btn-outline { padding: 6px 12px; border: 1px solid #E2E8F0; border-radius: 6px; background: white; color: #475569; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; }
-    .btn-outline:hover { background: #F8FAFC; border-color: #CBD5E1; }
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 12px 24px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; font-weight: 600; background: #F8FAFC; border-bottom: 2px solid #E1E8ED; }
-    td { padding: 16px 24px; border-bottom: 1px solid #F0F4F8; font-size: 14px; color: #334155; vertical-align: middle; background: #FFFFFF; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #F8FAFC; }
-    .mono { font-family: 'SF Mono', monospace; font-size: 12px; background: #EFF6FF; color: #2563EB; padding: 4px 8px; border-radius: 4px; font-weight: 500; }
-    .text-muted { color: #94A3B8; }
-    .text-right { text-align: right; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-    .status-success { background: #F0FDF4; color: #16A34A; }
-    .status-warning { background: #FFFBEB; color: #D97706; }
-    .status-danger { background: #FEF2F2; color: #DC2626; }
-    .btn-sm { padding: 6px 12px; border: 1px solid #E2E8F0; border-radius: 6px; background: white; color: #475569; font-size: 12px; cursor: pointer; transition: 0.2s; }
-    .btn-sm:hover { border-color: #2563EB; color: #2563EB; }
-    @media(max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media(max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } }
-  `]
+  styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   role = 'citoyen';
-  username = 'Utilisateur';
+  loading = true;
+  recentDemandes: Demande[] = [];
+  stats: StatCard[] = [];
+  today = '';
 
-  constructor(private auth: AuthService) {
-    this.role = this.auth.getUserRole();
-    this.username = this.auth.getUsername();
-  }
-}              ➕ Nouvelle demande
-            </button>
-            <div class="user-pill">
-              <div class="avatar">{{ username | slice:0:2 | uppercase }}</div>
-              <div class="user-info">
-                <span class="name">{{ username }}</span>
-                <span class="badge-role">{{ role | uppercase }}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+  constructor(private auth: AuthService, private demandeService: DemandeService) {}
 
-        <div class="content">
-          <!-- STATS -->
-          <div class="stats-grid">
-            <ng-container *ngIf="role === 'admin'">
-              <div class="card stat"><div class="stat-icon blue">👥</div><div class="stat-info"><div class="label">Utilisateurs</div><div class="value">1 240</div></div></div>
-              <div class="card stat"><div class="stat-icon green">💰</div><div class="stat-info"><div class="label">Budget</div><div class="value">840K$</div></div></div>
-              <div class="card stat"><div class="stat-icon orange">⚙️</div><div class="stat-info"><div class="label">Agents</div><div class="value">48</div></div></div>
-              <div class="card stat"><div class="stat-icon red">📈</div><div class="stat-info"><div class="label">Efficacité</div><div class="value">94%</div></div></div>
-            </ng-container>
-            <ng-container *ngIf="role === 'agent'">
-              <div class="card stat"><div class="stat-icon blue">📋</div><div class="stat-info"><div class="label">Dossiers</div><div class="value">24</div></div></div>
-              <div class="card stat"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="label">En attente</div><div class="value">8</div></div></div>
-              <div class="card stat"><div class="stat-icon green">✅</div><div class="stat-info"><div class="label">Résolus</div><div class="value">142</div></div></div>
-              <div class="card stat"><div class="stat-icon red">🎯</div><div class="stat-info"><div class="label">Score</div><div class="value">92%</div></div></div>
-            </ng-container>
-            <ng-container *ngIf="role === 'citoyen' || role === 'beneficiaire'">
-              <div class="card stat"><div class="stat-icon blue">📂</div><div class="stat-info"><div class="label">Mes Demandes</div><div class="value">3</div></div></div>
-              <div class="card stat"><div class="stat-icon orange">⏳</div><div class="stat-info"><div class="label">En cours</div><div class="value">1</div></div></div>
-              <div class="card stat"><div class="stat-icon green">✅</div><div class="stat-info"><div class="label">Approuvées</div><div class="value">2</div></div></div>
-              <div class="card stat"><div class="stat-icon red"></div><div class="stat-info"><div class="label">Aide Reçue</div><div class="value">350$</div></div></div>
-            </ng-container>
-          </div>
+  get isAdmin(): boolean { return this.role === 'admin'; }
+  get canCreateDemande(): boolean { return this.role === 'citoyen' || this.role === 'beneficiaire'; }
 
-          <!-- TABLE -->
-          <div class="card table-card">
-            <div class="card-header">
-              <div>
-                <h3 class="card-title">{{ role === 'admin' ? 'Activité globale' : role === 'agent' ? 'Dossiers prioritaires' : 'Mes demandes récentes' }}</h3>
-                <p class="card-subtitle">{{ role === 'admin' ? 'Vue système' : role === 'agent' ? 'Actions requises' : 'Historique' }}</p>
-              </div>
-              <button class="btn-outline" [routerLink]="role === 'citoyen' || role === 'beneficiaire' ? '/mes-demandes' : '/demandes'">Voir tout →</button>
-            </div>
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Réf.</th>
-                    <th *ngIf="role === 'citoyen' || role === 'beneficiaire'">Type</th>
-                    <th *ngIf="role !== 'citoyen' && role !== 'beneficiaire'">Bénéficiaire</th>
-                    <th>Statut</th>
-                    <th>Date</th>
-                    <th class="text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="mono">#SC-4821</td>
-                    <td *ngIf="role === 'citoyen' || role === 'beneficiaire'">Aide financière</td>
-                    <td *ngIf="role !== 'citoyen' && role !== 'beneficiaire'">Marie Koné</td>
-                    <td><span class="badge status-warning">En cours</span></td>
-                    <td class="text-muted">15 Jan 2025</td>
-                    <td class="text-right"><button class="btn-sm">Détail</button></td>
-                  </tr>
-                  <tr>
-                    <td class="mono">#SC-4820</td>
-                    <td *ngIf="role === 'citoyen' || role === 'beneficiaire'">Logement</td>
-                    <td *ngIf="role !== 'citoyen' && role !== 'beneficiaire'">Ibrahim Diallo</td>
-                    <td><span class="badge status-success">Approuvée</span></td>
-                    <td class="text-muted">14 Jan 2025</td>
-                    <td class="text-right"><button class="btn-sm">Détail</button></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  `,
-  styles: [`
-    :host { display: block; height: 100vh; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; background: #F5F7FA; }
-    .app-container { display: flex; height: 100%; }
-    .sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E1E8ED; display: flex; flex-direction: column; }
-    .sidebar-header { height: 64px; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid #F0F4F8; }
-    .brand-logo { width: 32px; height: 32px; background: #2563EB; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 10px; }
-    .brand-name { font-weight: 700; font-size: 18px; color: #0F172A; }
-    .sidebar-nav { flex: 1; padding: 20px 16px; overflow-y: auto; }
-    .nav-section { margin-bottom: 20px; }
-    .nav-label { font-size: 11px; font-weight: 700; color: #94A3B8; letter-spacing: 0.8px; margin-bottom: 12px; padding-left: 8px; text-transform: uppercase; }
-    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #475569; text-decoration: none; margin-bottom: 4px; font-weight: 500; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-    .nav-item:hover { background: #F1F5F9; color: #0F172A; }
-    .nav-item.active { background: #EFF6FF; color: #2563EB; font-weight: 600; }
-    .nav-item.logout { color: #EF4444; }
-    .nav-item.logout:hover { background: #FEF2F2; }
-    .icon { font-size: 18px; width: 20px; text-align: center; }
-    .sidebar-footer { padding: 16px; border-top: 1px solid #F0F4F8; }
-    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .topbar { height: 64px; background: #FFFFFF; border-bottom: 1px solid #E1E8ED; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
-    .page-title { font-size: 18px; font-weight: 700; color: #0F172A; margin: 0; }
-    .page-subtitle { font-size: 13px; color: #64748B; margin-top: 2px; }
-    .topbar-actions { display: flex; align-items: center; gap: 16px; }
-    .btn-new { background: #2563EB; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s; }
-    .btn-new:hover { background: #1D4ED8; transform: translateY(-1px); }
-    .user-pill { display: flex; align-items: center; gap: 12px; padding: 6px 16px 6px 6px; background: #F8FAFC; border: 1px solid #E1E8ED; border-radius: 99px; }
-    .avatar { width: 32px; height: 32px; background: #2563EB; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
-    .user-info { display: flex; flex-direction: column; }
-    .user-name { font-size: 13px; font-weight: 600; color: #0F172A; }
-    .badge-role { font-size: 10px; font-weight: 700; color: #2563EB; text-transform: uppercase; }
-    .content { flex: 1; overflow-y: auto; padding: 32px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
-    .card { background: #FFFFFF; border: 1px solid #E1E8ED; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-    .card.stat { display: flex; align-items: center; gap: 16px; }
-    .stat-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
-    .stat-icon.blue { background: #EFF6FF; } .stat-icon.green { background: #F0FDF4; } .stat-icon.orange { background: #FFFBEB; } .stat-icon.red { background: #FEF2F2; }
-    .stat-info .label { font-size: 12px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-info .value { font-size: 24px; font-weight: 700; color: #0F172A; margin-top: 4px; }
-    .card.table-card { padding: 0; overflow: hidden; }
-    .card-header { padding: 20px 24px; border-bottom: 1px solid #F0F4F8; display: flex; justify-content: space-between; align-items: center; }
-    .card-title { font-size: 16px; font-weight: 700; color: #0F172A; margin: 0; }
-    .card-subtitle { font-size: 13px; color: #64748B; margin: 4px 0 0; }
-    .btn-outline { padding: 6px 12px; border: 1px solid #E2E8F0; border-radius: 6px; background: white; color: #475569; font-size: 12px; font-weight: 500; cursor: pointer; transition: 0.2s; }
-    .btn-outline:hover { background: #F8FAFC; border-color: #CBD5E1; }
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 12px 24px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; font-weight: 600; background: #F8FAFC; border-bottom: 2px solid #E1E8ED; }
-    td { padding: 16px 24px; border-bottom: 1px solid #F0F4F8; font-size: 14px; color: #334155; vertical-align: middle; background: #FFFFFF; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #F8FAFC; }
-    .mono { font-family: 'SF Mono', monospace; font-size: 12px; background: #EFF6FF; color: #2563EB; padding: 4px 8px; border-radius: 4px; font-weight: 500; }
-    .text-muted { color: #94A3B8; }
-    .text-right { text-align: right; }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-    .status-success { background: #F0FDF4; color: #16A34A; }
-    .status-warning { background: #FFFBEB; color: #D97706; }
-    .status-danger { background: #FEF2F2; color: #DC2626; }
-    .btn-sm { padding: 6px 12px; border: 1px solid #E2E8F0; border-radius: 6px; background: white; color: #475569; font-size: 12px; cursor: pointer; transition: 0.2s; }
-    .btn-sm:hover { border-color: #2563EB; color: #2563EB; }
-    @media(max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media(max-width: 768px) { .sidebar { display: none; } .main-content { margin-left: 0; } .stats-grid { grid-template-columns: 1fr; } }
-  `]
-})
-export class DashboardComponent {
-  role = 'citoyen';
-  username = 'Utilisateur';
-
-  constructor(private auth: AuthService, private router: Router) {
-    this.role = this.auth.getUserRole();
-    this.username = this.auth.getUsername();
+  get subtitleByRole(): string {
+    const m: Record<string, string> = {
+      admin: 'Administration système — Vue globale',
+      agent: 'Espace agent — Dossiers en charge',
+      citoyen: 'Espace citoyen — Suivi de vos demandes',
+      beneficiaire: 'Espace bénéficiaire — Suivi de vos dossiers'
+    };
+    return m[this.role] || '';
   }
 
-  logout() {
-    this.auth.logout();
-    this.router.navigate(['/login']);
+  get tableTitle(): string {
+    return this.role === 'admin' ? 'Activité récente' : this.role === 'agent' ? 'Dossiers prioritaires' : 'Mes demandes récentes';
+  }
+
+  get tableSubtitle(): string {
+    return this.role === 'admin' ? '5 dernières demandes' : 'Dernières mises à jour';
+  }
+
+  get tableLink(): string {
+    return (this.role === 'citoyen' || this.role === 'beneficiaire') ? '/mes-demandes' : '/demandes';
+  }
+
+  ngOnInit(): void {
+    this.role = this.auth.getUserRole();
+    const now = new Date();
+    this.today = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    this.demandeService.getDemandes().subscribe({
+      next: (data) => {
+        const all: Demande[] = data.results || data;
+        this.recentDemandes = all.slice(0, 5);
+        this.buildStats(all);
+        this.loading = false;
+      },
+      error: (_err: HttpErrorResponse) => {
+        this.loading = false;
+        this.buildStats([]);
+      }
+    });
+  }
+
+  buildStats(demandes: Demande[]): void {
+    const total = demandes.length;
+    const enCours = demandes.filter(d => d.statut === 'en_cours' || d.statut === 'soumise').length;
+    const approuvees = demandes.filter(d => d.statut === 'approuvee').length;
+    const montantTotal = demandes.filter(d => d.statut === 'approuvee').reduce((s, d) => s + +d.montant_demande, 0);
+
+    if (this.role === 'admin') {
+      this.stats = [
+        { label: 'Total demandes', value: total, color: '#6366f1', icon: iconDoc, sub: 'depuis le début' },
+        { label: 'En attente', value: enCours, color: '#f59e0b', icon: iconClock },
+        { label: 'Approuvées', value: approuvees, color: '#10b981', icon: iconCheck },
+        { label: 'Montant accordé', value: montantTotal.toLocaleString('fr') + ' $', color: '#3b82f6', icon: iconDollar }
+      ];
+    } else if (this.role === 'agent') {
+      this.stats = [
+        { label: 'Dossiers totaux', value: total, color: '#6366f1', icon: iconDoc },
+        { label: 'En attente', value: enCours, color: '#f59e0b', icon: iconClock },
+        { label: 'Résolus', value: approuvees, color: '#10b981', icon: iconCheck },
+        { label: 'Taux résolution', value: total > 0 ? Math.round(approuvees / total * 100) + '%' : 'N/A', color: '#3b82f6', icon: iconChart }
+      ];
+    } else {
+      this.stats = [
+        { label: 'Mes demandes', value: total, color: '#6366f1', icon: iconDoc },
+        { label: 'En cours', value: enCours, color: '#f59e0b', icon: iconClock },
+        { label: 'Approuvées', value: approuvees, color: '#10b981', icon: iconCheck },
+        { label: 'Aide obtenue', value: montantTotal.toLocaleString('fr') + ' $', color: '#3b82f6', icon: iconDollar }
+      ];
+    }
+  }
+
+  typeAideLabel(v: string): string {
+    const m: Record<string, string> = { financiere: 'Financière', alimentaire: 'Alimentaire', medicale: 'Médicale', logement: 'Logement', accompagnement: 'Accompagnement' };
+    return m[v] || v;
+  }
+
+  urgenceLabel(v: string): string {
+    return { urgent: 'Urgent', normal: 'Normal', faible: 'Faible' }[v] || v;
+  }
+
+  statutLabel(v: string): string {
+    return { soumise: 'Soumise', en_cours: 'En cours', approuvee: 'Approuvée', rejetee: 'Rejetée' }[v] || v;
   }
 }
+
+const iconDoc = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+const iconClock = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+const iconCheck = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
+const iconDollar = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`;
+const iconChart = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`;
