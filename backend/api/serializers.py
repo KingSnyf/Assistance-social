@@ -9,6 +9,7 @@ class CustomTokenSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
+        token['username'] = user.username
         if hasattr(user, 'profile'):
             token['role'] = user.profile.role
         else:

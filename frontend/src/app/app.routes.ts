@@ -22,6 +22,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/demandes/demandes.component').then(m => m.DemandesComponent)
       },
       {
+        path: 'demandes/:id',
+        loadComponent: () => import('./features/demandes/detail-demande/detail-demande.component').then(m => m.DetailDemandeComponent)
+      },
+      {
         path: 'mes-demandes',
         loadComponent: () => import('./features/demandes/demandes.component').then(m => m.DemandesComponent)
       },
@@ -36,6 +40,10 @@ export const routes: Routes = [
       {
         path: 'beneficiaires',
         loadComponent: () => import('./features/beneficiaires/beneficiaires.component').then(m => m.BeneficiairesComponent)
+      },
+      {
+        path: 'beneficiaires/creer',
+        loadComponent: () => import('./features/beneficiaires/create-beneficiaire/create-beneficiaire.component').then(m => m.CreateBeneficiaireComponent)
       },
       {
         path: 'agents',

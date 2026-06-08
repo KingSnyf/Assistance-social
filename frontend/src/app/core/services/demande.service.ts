@@ -57,7 +57,7 @@ export class DemandeService {
   }
 
   getDemande(id: string): Observable<Demande> {
-    return this.http.get<Demande>(`${this.apiUrl}/${id}/`).pipe(catchError(this.handleError));
+    return this.http.get<Demande>(`${this.apiUrl}${id}/`).pipe(catchError(this.handleError));
   }
 
   createDemande(data: CreateDemandeDto): Observable<Demande> {
@@ -65,18 +65,26 @@ export class DemandeService {
   }
 
   updateDemande(id: string, data: Partial<Demande>): Observable<Demande> {
-    return this.http.patch<Demande>(`${this.apiUrl}/${id}/`, data).pipe(catchError(this.handleError));
+    return this.http.patch<Demande>(`${this.apiUrl}${id}/`, data).pipe(catchError(this.handleError));
   }
 
   deleteDemande(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}/`).pipe(catchError(this.handleError));
+    return this.http.delete<void>(`${this.apiUrl}${id}/`).pipe(catchError(this.handleError));
   }
 
   approuverDemande(id: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/approuver/`, {}).pipe(catchError(this.handleError));
+    return this.http.post<{ message: string }>(`${this.apiUrl}${id}/approuver/`, {}).pipe(catchError(this.handleError));
   }
 
   rejeterDemande(id: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/rejeter/`, {}).pipe(catchError(this.handleError));
+    return this.http.post<{ message: string }>(`${this.apiUrl}${id}/rejeter/`, {}).pipe(catchError(this.handleError));
+  }
+
+  prendreEnChargeDemande(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}${id}/prendre_en_charge/`, {}).pipe(catchError(this.handleError));
+  }
+
+  saveNotes(id: string, notes: string): Observable<{ message: string; notes_internes: string }> {
+    return this.http.patch<{ message: string; notes_internes: string }>(`${this.apiUrl}${id}/notes/`, { notes_internes: notes }).pipe(catchError(this.handleError));
   }
 }

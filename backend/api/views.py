@@ -88,6 +88,38 @@ class DemandeViewSet(BaseViewSet):
         serializer.save(owner=self.request.user)
 
     @action(detail=True, methods=['post'])
+    def prendre_en_charge(self, request, pk=None):
+        role = self.get_role()
+        if role not in ('admin', 'agent'):
+            return Response(
+                {'error': 'Permissions insuffisantes.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        demande = self.get_object()
+        if demande.statut != 'soumise':
+            return Response(
+                {'error': 'Seules les demandes soumises peuvent être prises en charge.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        demande.statut        = 'en_cours'
+        demande.agent_assigne = request.user
+        demande.save()
+        return Response({'message': 'Demande prise en charge.'})
+
+    @action(detail=True, methods=['patch'])
+    def notes(self, request, pk=None):
+        role = self.get_role()
+        if role not in ('admin', 'agent'):
+            return Response(
+                {'error': 'Permissions insuffisantes.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        demande = self.get_object()
+        demande.notes_internes = request.data.get('notes_internes', demande.notes_internes)
+        demande.save()
+        return Response({'message': 'Notes sauvegardées.', 'notes_internes': demande.notes_internes})
+
+    @action(detail=True, methods=['post'])
     def approuver(self, request, pk=None):
         # ✅ Seuls les agents et admins peuvent approuver
         role = self.get_role()
@@ -98,9 +130,9 @@ class DemandeViewSet(BaseViewSet):
             )
         
         demande = self.get_object()
-        if demande.statut != 'soumise':
+        if demande.statut not in ('soumise', 'en_cours'):
             return Response(
-                {'error': 'Seules les demandes soumises peuvent être approuvées.'},
+                {'error': 'Seules les demandes soumises ou en cours peuvent être approuvées.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         demande.statut         = 'approuvee'
@@ -120,9 +152,9 @@ class DemandeViewSet(BaseViewSet):
             )
         
         demande = self.get_object()
-        if demande.statut != 'soumise':
+        if demande.statut not in ('soumise', 'en_cours'):
             return Response(
-                {'error': 'Seules les demandes soumises peuvent être rejetées.'},
+                {'error': 'Seules les demandes soumises ou en cours peuvent être rejetées.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         demande.statut          = 'rejetee'

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { DemandeService, Demande } from '../../core/services/demande.service';
@@ -214,7 +214,8 @@ export class DemandesComponent implements OnInit {
 
   constructor(
     private demandeService: DemandeService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -282,6 +283,7 @@ export class DemandesComponent implements OnInit {
   }
 
   viewDetails(demande: Demande): void {
-    alert('Référence : ' + demande.reference + '\nStatut : ' + this.formatStatut(demande.statut));
+    const base = this.isAgent ? '/demandes' : '/mes-demandes';
+    this.router.navigate([base, demande.id]);
   }
 }

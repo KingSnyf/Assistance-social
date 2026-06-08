@@ -91,8 +91,7 @@ class Demande(models.Model):
     def save(self, *args, **kwargs):
         # Génération automatique de la référence si nouvelle demande
         if not self.reference:
-            last = Demande.objects.all().order_by('id').last()
-            num = 1 if not last else last.id.int % 10000 + 1
+            num = Demande.objects.count() + 1
             self.reference = f"SC-{num:04d}"
         super().save(*args, **kwargs)
     
