@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BeneficiaireService, Beneficiaire } from '../../core/services/beneficiaire.service';
 
@@ -17,6 +18,13 @@ import { BeneficiaireService, Beneficiaire } from '../../core/services/beneficia
           <h1>Bénéficiaires</h1>
           <p class="page-sub">{{ loading ? '…' : totalCount + ' bénéficiaire(s) enregistré(s)' }}</p>
         </div>
+        <button class="btn-create" (click)="createBeneficiaire()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Créer un bénéficiaire
+        </button>
       </div>
 
       <!-- BARRE DE RECHERCHE -->
@@ -156,6 +164,26 @@ import { BeneficiaireService, Beneficiaire } from '../../core/services/beneficia
       font-size: 13px;
       color: #94a3b8;
       margin: 0;
+    }
+
+    .btn-create {
+      padding: 10px 20px;
+      background: #1e3a5f;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-create:hover {
+      background: #0f2a47;
     }
 
     /* ── SEARCH ── */
@@ -414,7 +442,7 @@ export class BeneficiairesComponent implements OnInit {
     'linear-gradient(135deg,#14b8a6,#0f766e)',
   ];
 
-  constructor(private beneficiaireService: BeneficiaireService) {}
+  constructor(private beneficiaireService: BeneficiaireService, private router: Router) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -459,5 +487,9 @@ export class BeneficiairesComponent implements OnInit {
     /* Couleur déterministe basée sur le nom */
     const idx = (b.nom.charCodeAt(0) + (b.prenom.charCodeAt(0) || 0)) % this.colors.length;
     return this.colors[idx];
+  }
+
+  createBeneficiaire(): void {
+    this.router.navigate(['/beneficiaires/creer']);
   }
 }

@@ -56,6 +56,14 @@ class BeneficiaireViewSet(BaseViewSet):
             return qs
         return qs.filter(user=self.request.user)
 
+    def perform_create(self, serializer):
+        # Optionnel: lier le bénéficiaire à l'utilisateur actuel
+        role = self.get_role()
+        if role in ('admin', 'agent', 'citoyen'):
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save()
+
 
 # ── Demandes ──────────────────────────────────────────────────────────────────
 class DemandeViewSet(BaseViewSet):
@@ -81,6 +89,14 @@ class DemandeViewSet(BaseViewSet):
 
     @action(detail=True, methods=['post'])
     def approuver(self, request, pk=None):
+        # ✅ Seuls les agents et admins peuvent approuver
+        role = self.get_role()
+        if role not in ('admin', 'agent'):
+            return Response(
+                {'error': 'Vous n\'avez pas les permissions pour approuver les demandes.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         demande = self.get_object()
         if demande.statut != 'soumise':
             return Response(
@@ -95,6 +111,14 @@ class DemandeViewSet(BaseViewSet):
 
     @action(detail=True, methods=['post'])
     def rejeter(self, request, pk=None):
+        # ✅ Seuls les agents et admins peuvent rejeter
+        role = self.get_role()
+        if role not in ('admin', 'agent'):
+            return Response(
+                {'error': 'Vous n\'avez pas les permissions pour rejeter les demandes.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         demande = self.get_object()
         if demande.statut != 'soumise':
             return Response(

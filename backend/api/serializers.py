@@ -52,7 +52,7 @@ class BeneficiaireSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Beneficiaire
         fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at', 'user']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
     def validate_email(self, value):
         if value and Beneficiaire.objects.filter(email=value).exclude(

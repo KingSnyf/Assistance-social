@@ -196,11 +196,11 @@ export class CreateDemandeComponent implements OnInit {
   currentStep = 2;
 
   typesAide = [
-    { value: 'financiere', label: 'Financière', emoji: '💰' },
-    { value: 'alimentaire', label: 'Alimentaire', emoji: '🍽️' },
-    { value: 'medicale', label: 'Médicale', emoji: '🏥' },
-    { value: 'logement', label: 'Logement', emoji: '🏠' },
-    { value: 'accompagnement', label: 'Accompagnement', emoji: '🤝' }
+    { value: 'financiere',      label: 'Financière',      emoji: '💰' },
+    { value: 'alimentaire',     label: 'Alimentaire',     emoji: '🍽️' },
+    { value: 'medicale',        label: 'Médicale',        emoji: '🏥' },
+    { value: 'logement',        label: 'Logement',        emoji: '🏠' },
+    { value: 'accompagnement',  label: 'Accompagnement',  emoji: '🤝' }
   ];
 
   constructor(
@@ -210,18 +210,18 @@ export class CreateDemandeComponent implements OnInit {
     private router: Router
   ) {
     this.demandeForm = this.fb.group({
-      beneficiaire: ['', Validators.required],
-      type_aide: ['', Validators.required],
+      beneficiaire:    ['', Validators.required],
+      type_aide:       ['', Validators.required],
       montant_demande: ['', [Validators.required, Validators.min(10), Validators.max(10000)]],
-      urgence: ['normal', Validators.required],
-      motif: ['', [Validators.required, Validators.minLength(20)]]
+      urgence:         ['normal', Validators.required],
+      motif:           ['', [Validators.required, Validators.minLength(20)]]
     });
   }
 
   ngOnInit(): void {
     this.loadingBenef = true;
     this.beneficiaireService.getBeneficiaires().subscribe({
-      next: (data) => {
+      next: (data: any) => {
         this.beneficiaires = data.results || data;
         this.loadingBenef = false;
       },
@@ -245,7 +245,7 @@ export class CreateDemandeComponent implements OnInit {
     }
 
     this.isSubmitting = true;
-    this.submitError = '';
+    this.submitError  = '';
     this.submitSuccess = '';
 
     this.demandeService.createDemande(this.demandeForm.value as CreateDemandeDto).subscribe({
@@ -255,7 +255,9 @@ export class CreateDemandeComponent implements OnInit {
       },
       error: (err: HttpErrorResponse) => {
         if (err.error && typeof err.error === 'object') {
-          const msgs = Object.entries(err.error).map(([k, v]) => `${k} : ${Array.isArray(v) ? v.join(', ') : v}`);
+          const msgs = Object.entries(err.error).map(
+            ([k, v]) => `${k} : ${Array.isArray(v) ? v.join(', ') : v}`
+          );
           this.submitError = msgs.join(' | ');
         } else {
           this.submitError = err.error?.detail || err.message || 'Erreur lors de la création.';

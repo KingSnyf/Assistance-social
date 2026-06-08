@@ -33,11 +33,11 @@ class Beneficiaire(models.Model):
     prenom = models.CharField(max_length=100)
     nom = models.CharField(max_length=100)
     email = models.EmailField(blank=True, null=True)
-    telephone = models.CharField(max_length=20, blank=True)
+    telephone = models.CharField(max_length=20, blank=True, null=True)
     date_naissance = models.DateField(null=True, blank=True)
-    nationalite = models.CharField(max_length=100, default='Non spécifiée')
+    nationalite = models.CharField(max_length=100, default='Non spécifiée', blank=True)
     pays_residence = models.CharField(max_length=100)
-    situation_familiale = models.CharField(max_length=100, blank=True)
+    situation_familiale = models.CharField(max_length=100, blank=True, null=True)
     revenus_mensuels = models.DecimalField(
         max_digits=10, decimal_places=2, 
         null=True, blank=True,
@@ -47,7 +47,7 @@ class Beneficiaire(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     # Liaison avec l'utilisateur Django (optionnel pour les citoyens inscrits)
-    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='beneficiaires')
     
     class Meta:
         ordering = ['nom', 'prenom']

@@ -31,7 +31,7 @@ export interface CreateDemandeDto {
 
 @Injectable({ providedIn: 'root' })
 export class DemandeService {
-  private apiUrl = `${environment.apiUrl}/demandes`;
+  private apiUrl = `${environment.apiUrl}/demandes/`;
 
   constructor(private http: HttpClient) {}
 
