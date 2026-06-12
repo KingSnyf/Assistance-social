@@ -147,9 +147,7 @@ SIMPLE_JWT = {
 }
 
 # 🌍 CORS Configuration (FRONTEND ↔ BACKEND)
-CORS_ALLOWED_ORIGINS = [
-    "https://assistance-social.vercel.app", # Remplacez par votre vraie URL Vercel
-]
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:4200').split(',')
 CORS_ALLOW_CREDENTIALS = True # Indispensable si vous utilisez l'authentification par session/cookies de Django
 
 # Headers autorisés (pour les requêtes preflight OPTIONS)

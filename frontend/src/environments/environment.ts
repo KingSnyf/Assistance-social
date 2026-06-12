@@ -1,4 +1,5 @@
+// frontend/src/environments/environment.prod.ts
 export const environment = {
   production: true,
-  apiUrl: 'https://assistance-social.onrender.com' // Pas de slash (/) à la fin
+  apiUrl: 'https://assistance-social.onrender.com/api'  // ← ajoute /api
 };
