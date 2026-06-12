@@ -1,222 +1,156 @@
+/* ─── Container ─────────────────────────────────────────── */
 .demandes-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 24px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
-.header {
+/* ─── Header ─────────────────────────────────────────────── */
+.page-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.page-title { font-size: 1.6rem; font-weight: 700; color: #1a2e1a; margin: 0; }
+.badge-count {
+  background: #e8f5e9; color: #2e7d32;
+  font-size: 0.8rem; font-weight: 600;
+  padding: 2px 10px; border-radius: 999px;
 }
 
-.header h1 {
-  margin: 0;
-  color: #0f172a;
+/* ─── States ─────────────────────────────────────────────── */
+.loading-state {
+  display: flex; align-items: center; gap: 12px;
+  color: #666; padding: 40px 0;
 }
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-}
-
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #0ea5e9;
+  width: 24px; height: 24px;
+  border: 3px solid #c8e6c9;
+  border-top-color: #2e7d32;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+  animation: spin .7s linear infinite;
 }
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.alert {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .alert-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: #fef2f2; border: 1px solid #fca5a5;
+  color: #991b1b; padding: 12px 16px;
+  border-radius: 8px; margin-bottom: 20px;
 }
-
 .empty-state {
-  text-align: center;
-  padding: 40px;
-  color: #64748b;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; padding: 60px 0; color: #666; text-align: center;
 }
+.empty-state svg { color: #a5d6a7; }
 
-.demandes-list {
+/* ─── Grid ───────────────────────────────────────────────── */
+.demandes-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 20px;
 }
 
+/* ─── Card ───────────────────────────────────────────────── */
 .demande-card {
-  background: white;
+  background: #fff;
+  border: 1px solid #e8f5e9;
   border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(46,125,50,.06);
+  transition: box-shadow .2s;
 }
+.demande-card:hover { box-shadow: 0 4px 16px rgba(46,125,50,.12); }
 
-.demande-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #f1f8f1, #e8f5e9);
+  border-bottom: 1px solid #c8e6c9;
 }
+.reference { font-weight: 700; color: #1a2e1a; font-size: .95rem; }
 
-.reference {
-  font-weight: 600;
-  color: #0f172a;
-  font-size: 16px;
+/* ─── Statut badges ──────────────────────────────────────── */
+.statut-badge {
+  font-size: .72rem; font-weight: 600;
+  padding: 3px 10px; border-radius: 999px; text-transform: uppercase;
 }
+.statut-soumise   { background: #e3f2fd; color: #1565c0; }
+.statut-en_cours  { background: #fff8e1; color: #e65100; }
+.statut-approuvee { background: #e8f5e9; color: #2e7d32; }
+.statut-rejetee   { background: #fce4ec; color: #c62828; }
+.statut-cloturee  { background: #f3e5f5; color: #6a1b9a; }
 
-.statut {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
+/* ─── Card body ──────────────────────────────────────────── */
+.card-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+.info-row { display: flex; justify-content: space-between; align-items: center; font-size: .88rem; }
+.info-label { color: #666; }
+.info-val { color: #1a2e1a; font-weight: 500; }
+.info-val.amount { color: #2e7d32; font-weight: 700; }
+.capitalize { text-transform: capitalize; }
 
-.statut-soumise {
-  background: #dbeafe;
-  color: #1d4ed8;
+.urgence-badge {
+  font-size: .72rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px;
 }
-
-.statut-en_cours {
-  background: #fed7aa;
-  color: #c2410c;
-}
-
-.statut-approuvee {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.statut-rejetee {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.demande-body {
-  margin-bottom: 16px;
-}
-
-.demande-body p {
-  margin: 8px 0;
-  color: #475569;
-  font-size: 14px;
-}
-
-.demande-body strong {
-  color: #0f172a;
-}
+.urgence-haute   { background: #fce4ec; color: #c62828; }
+.urgence-normale { background: #e8f5e9; color: #2e7d32; }
+.urgence-faible  { background: #f3f4f6; color: #374151; }
 
 .motif-rejet {
-  margin-top: 12px;
-  padding: 12px;
-  background: #fef2f2;
-  border-radius: 8px;
-  color: #b91c1c;
-  font-size: 13px;
+  margin-top: 8px; font-size: .82rem;
+  background: #fce4ec; color: #c62828;
+  padding: 8px 12px; border-radius: 6px;
 }
 
-.demande-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+/* ─── Card actions ───────────────────────────────────────── */
+.card-actions {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid #e8f5e9;
 }
 
+/* ─── Buttons ────────────────────────────────────────────── */
 .btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; border-radius: 8px; cursor: pointer;
+  font-weight: 600; transition: filter .15s, opacity .15s;
+  padding: 9px 18px; font-size: .9rem;
 }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn:not(:disabled):hover { filter: brightness(.92); }
 
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-}
+.btn-sm { padding: 6px 12px; font-size: .82rem; border-radius: 6px; }
 
-.btn-primary {
-  background: #0ea5e9;
-  color: white;
+.btn-primary { background: #2e7d32; color: #fff; }
+.btn-success { background: #388e3c; color: #fff; }
+.btn-danger  { background: #d32f2f; color: #fff; }
+.btn-info    { background: #0288d1; color: #fff; }
+.btn-outline {
+  background: transparent; color: #2e7d32;
+  border: 1.5px solid #2e7d32;
 }
+.btn-outline:hover { background: #f1f8f1; }
 
-.btn-primary:hover {
-  background: #0284c7;
-}
-
-.btn-success {
-  background: #22c55e;
-  color: white;
-}
-
-.btn-success:hover {
-  background: #16a34a;
-}
-
-.btn-danger {
-  background: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #dc2626;
-}
-
-.btn-info {
-  background: #6366f1;
-  color: white;
-}
-
-.btn-info:hover {
-  background: #4f46e5;
-}
-/* Styles rejet inline */
+/* ─── Rejet inline form ──────────────────────────────────── */
 .rejet-form {
-  margin-top: 12px;
-  padding: 14px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid #fce4ec;
+  background: #fff5f5;
 }
-.rejet-form label { font-size: 13px; font-weight: 600; color: #7f1d1d; }
-.req { color: #dc2626; }
 .rejet-textarea {
-  width: 100%; padding: 8px 12px; border: 1px solid #fca5a5;
-  border-radius: 6px; font-size: 13px; font-family: inherit;
-  resize: vertical; box-sizing: border-box;
+  width: 100%; box-sizing: border-box;
+  border: 1.5px solid #f48fb1; border-radius: 8px;
+  padding: 10px; font-size: .88rem; resize: vertical;
+  font-family: inherit; outline: none;
+  transition: border-color .2s;
 }
-.rejet-textarea:focus { outline: none; border-color: #dc2626; }
-.rejet-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.char-count { font-size: 12px; color: #94a3b8; }
-.char-count.error { color: #dc2626; font-weight: 600; }
-.rejet-alert { font-size: 12px; color: #dc2626; font-weight: 600; flex: 1; }
-
-/* Statuts */
-.statut-soumise   { background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
-.statut-en_cours  { background: #fefce8; color: #a16207; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
-.statut-approuvee { background: #f0fdf4; color: #166534; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
-.statut-rejetee   { background: #fef2f2; color: #dc2626; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.rejet-textarea:focus { border-color: #d32f2f; }
+.rejet-footer {
+  display: flex; align-items: center;
+  gap: 10px; margin-top: 8px; flex-wrap: wrap;
+}
+.char-count { font-size: .78rem; color: #999; }
+.char-count.valid { color: #388e3c; font-weight: 600; }
+.rejet-error { font-size: .8rem; color: #c62828; flex: 1; }

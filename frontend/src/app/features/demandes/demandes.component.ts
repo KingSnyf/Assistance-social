@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { DemandeService, Demande } from '../../core/services/demande.service';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -16,25 +17,21 @@ export class DemandesComponent implements OnInit {
   demandes: Demande[] = [];
   loading = true;
   error = '';
-  role = 'citoyen';
-
-  // Rejet inline
-  showRejetFormId: string | null = null;
-  motifRejet = '';
-  rejetError = '';
+  role = '';
+  rejetForms: { [id: string]: { open: boolean; motif: string; loading: boolean; error: string } } = {};
 
   constructor(
     private demandeService: DemandeService,
-    private authService: AuthService
+    private auth: AuthService
   ) {}
-
-  ngOnInit(): void {
-    this.role = this.authService.getUserRole();
-    this.loadDemandes();
-  }
 
   get isAdminOrAgent(): boolean {
     return this.role === 'admin' || this.role === 'agent';
+  }
+
+  ngOnInit(): void {
+    this.role = this.auth.getUserRole();
+    this.loadDemandes();
   }
 
   loadDemandes(): void {
@@ -43,43 +40,50 @@ export class DemandesComponent implements OnInit {
       next: (data: any) => {
         this.demandes = data.results || data;
         this.loading = false;
+        this.demandes.forEach(d => {
+          if (!this.rejetForms[d.id]) {
+            this.rejetForms[d.id] = { open: false, motif: '', loading: false, error: '' };
+          }
+        });
       },
-      error: (err: any) => {
-        console.error('Erreur:', err);
-        this.error = 'Erreur lors du chargement des demandes';
+      error: (err: HttpErrorResponse) => {
+        this.error = err.error?.detail || 'Erreur lors du chargement des demandes.';
         this.loading = false;
       }
     });
   }
 
   approuverDemande(id: string): void {
-    if (!confirm('Confirmer l\'approbation de cette demande ?')) return;
     this.demandeService.approuverDemande(id).subscribe({
       next: () => this.loadDemandes(),
-      error: (err: any) => console.error('Erreur approbation:', err)
+      error: (err: HttpErrorResponse) => console.error('Erreur approbation:', err)
     });
   }
 
   toggleRejetForm(id: string): void {
-    this.showRejetFormId = this.showRejetFormId === id ? null : id;
-    this.motifRejet = '';
-    this.rejetError = '';
+    if (this.rejetForms[id]) {
+      this.rejetForms[id].open = !this.rejetForms[id].open;
+    }
   }
 
-  confirmerRejet(demande: Demande): void {
-    if (this.motifRejet.trim().length < 10) {
-      this.rejetError = 'Le motif doit contenir au moins 10 caractères.';
+  confirmerRejet(id: string): void {
+    const form = this.rejetForms[id];
+    if (!form || form.motif.trim().length < 10) {
+      if (form) form.error = 'Le motif doit contenir au moins 10 caractères.';
       return;
     }
-    this.demandeService.rejeterDemande(demande.id, this.motifRejet).subscribe({
+    form.loading = true;
+    form.error = '';
+    this.demandeService.rejeterDemande(id, form.motif).subscribe({
       next: () => {
-        this.showRejetFormId = null;
-        this.motifRejet = '';
-        this.rejetError = '';
+        form.open = false;
+        form.motif = '';
+        form.loading = false;
         this.loadDemandes();
       },
-      error: (err: any) => {
-        this.rejetError = err.error?.detail || err.error?.error || 'Erreur lors du rejet.';
+      error: (err: HttpErrorResponse) => {
+        form.error = err.error?.detail || 'Erreur lors du rejet.';
+        form.loading = false;
       }
     });
   }
@@ -87,7 +91,15 @@ export class DemandesComponent implements OnInit {
   prendreEnCharge(id: string): void {
     this.demandeService.prendreEnChargeDemande(id).subscribe({
       next: () => this.loadDemandes(),
-      error: (err: any) => console.error('Erreur prise en charge:', err)
+      error: (err: HttpErrorResponse) => console.error('Erreur:', err)
     });
+  }
+
+  statutLabel(statut: string): string {
+    const labels: Record<string, string> = {
+      soumise: 'Soumise', en_cours: 'En cours', approuvee: 'Approuvée',
+      rejetee: 'Rejetée', cloturee: 'Clôturée'
+    };
+    return labels[statut] || statut;
   }
 }

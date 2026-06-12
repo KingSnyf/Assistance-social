@@ -1,94 +1,109 @@
 <div class="demandes-container">
-  <div class="header">
-    <h1>Gestion des Demandes</h1>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Demandes d'aide</h1>
+      <span class="badge-count">{{ demandes.length }}</span>
+    </div>
     <button *ngIf="isAdminOrAgent" class="btn btn-primary" routerLink="/demandes/nouvelle">
-      + Nouvelle Demande
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Nouvelle demande
     </button>
   </div>
 
-  <div *ngIf="loading" class="loading">
+  <!-- LOADING -->
+  <div class="loading-state" *ngIf="loading">
     <div class="spinner"></div>
-    <p>Chargement des demandes...</p>
+    <span>Chargement...</span>
   </div>
 
-  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+  <!-- ERREUR -->
+  <div class="alert-error" *ngIf="error">{{ error }}</div>
 
-  <div *ngIf="!loading && demandes.length === 0" class="empty-state">
-    <p>Aucune demande trouvée.</p>
+  <!-- VIDE -->
+  <div class="empty-state" *ngIf="!loading && !error && demandes.length === 0">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    </svg>
+    <p>Aucune demande trouvee.</p>
+    <button *ngIf="isAdminOrAgent" class="btn btn-primary" routerLink="/demandes/nouvelle">Creer une demande</button>
   </div>
 
-  <div *ngIf="!loading && demandes.length > 0" class="demandes-list">
-    <div class="demande-card" *ngFor="let demande of demandes">
+  <!-- LISTE -->
+  <div class="demandes-grid" *ngIf="!loading && demandes.length > 0">
+    <div class="demande-card" *ngFor="let d of demandes">
 
-      <div class="demande-header">
-        <span class="reference">{{ demande.reference }}</span>
-        <span class="statut" [ngClass]="'statut-' + demande.statut">
-          {{ demande.statut | uppercase }}
-        </span>
+      <div class="card-header">
+        <span class="reference">{{ d.reference }}</span>
+        <span class="statut-badge statut-{{ d.statut }}">{{ statutLabel(d.statut) }}</span>
       </div>
 
-      <div class="demande-body">
-        <p><strong>Bénéficiaire :</strong> {{ demande.beneficiaire_prenom }} {{ demande.beneficiaire_nom }}</p>
-        <p><strong>Type d'aide :</strong> {{ demande.type_aide }}</p>
-        <p><strong>Montant :</strong> {{ demande.montant_demande | number:'1.0-0' }} FCFA</p>
-        <p><strong>Urgence :</strong> {{ demande.urgence }}</p>
-        <p><strong>Date :</strong> {{ demande.date_soumission | date:'dd MMM yyyy' }}</p>
-        <div *ngIf="demande.motif_rejet" class="motif-rejet">
-          <strong>Motif de rejet :</strong> {{ demande.motif_rejet }}
+      <div class="card-body">
+        <div class="info-row">
+          <span class="info-label">Beneficiaire</span>
+          <span class="info-val">{{ d.beneficiaire_prenom }} {{ d.beneficiaire_nom }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Type d'aide</span>
+          <span class="info-val capitalize">{{ d.type_aide }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Montant</span>
+          <span class="info-val amount">{{ d.montant_demande | number }} USD</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Urgence</span>
+          <span class="urgence-badge urgence-{{ d.urgence }}">{{ d.urgence }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Date</span>
+          <span class="info-val">{{ d.date_soumission | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="motif-rejet" *ngIf="d.motif_rejet">
+          <strong>Motif de rejet :</strong> {{ d.motif_rejet }}
         </div>
       </div>
 
-      <!-- ACTIONS -->
-      <div class="demande-actions">
-        <!-- Voir détails : visible par tous -->
-        <button class="btn btn-sm btn-info" [routerLink]="['/demandes', demande.id]">
-          Voir détails
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" [routerLink]="['/demandes', d.id]">
+          Voir details
         </button>
 
-        <!-- Actions réservées admin/agent -->
         <ng-container *ngIf="isAdminOrAgent">
-          <button
-            *ngIf="demande.statut === 'soumise'"
-            class="btn btn-sm btn-warning"
-            (click)="prendreEnCharge(demande.id)">
+          <button *ngIf="d.statut === 'soumise'" class="btn btn-info btn-sm" (click)="prendreEnCharge(d.id)">
             Prendre en charge
           </button>
-
-          <button
-            *ngIf="demande.statut === 'soumise' || demande.statut === 'en_cours'"
-            class="btn btn-sm btn-success"
-            (click)="approuverDemande(demande.id)">
+          <button *ngIf="d.statut === 'soumise' || d.statut === 'en_cours'" class="btn btn-success btn-sm" (click)="approuverDemande(d.id)">
             Approuver
           </button>
-
-          <button
-            *ngIf="demande.statut === 'soumise' || demande.statut === 'en_cours'"
-            class="btn btn-sm btn-danger"
-            (click)="toggleRejetForm(demande.id)">
-            {{ showRejetFormId === demande.id ? 'Annuler' : 'Rejeter' }}
+          <button *ngIf="d.statut === 'soumise' || d.statut === 'en_cours'"
+                  class="btn btn-danger btn-sm"
+                  (click)="toggleRejetForm(d.id)">
+            {{ rejetForms[d.id].open ? 'Annuler' : 'Rejeter' }}
           </button>
         </ng-container>
       </div>
 
       <!-- Formulaire rejet inline -->
-      <div class="rejet-form" *ngIf="isAdminOrAgent && showRejetFormId === demande.id">
-        <label>Motif du rejet <span class="req">*</span></label>
+      <div class="rejet-form" *ngIf="isAdminOrAgent && rejetForms[d.id].open">
         <textarea
-          [(ngModel)]="motifRejet"
-          placeholder="Expliquez la raison du rejet (min. 10 caractères)…"
-          rows="3"
-          class="rejet-textarea">
+          class="rejet-textarea"
+          [(ngModel)]="rejetForms[d.id].motif"
+          placeholder="Motif du rejet (minimum 10 caracteres)..."
+          rows="3">
         </textarea>
-        <div class="rejet-meta">
-          <span class="char-count" [class.error]="motifRejet.trim().length > 0 && motifRejet.trim().length < 10">
-            {{ motifRejet.trim().length }} / 10 min
+        <div class="rejet-footer">
+          <span class="char-count" [class.valid]="rejetForms[d.id].motif.length >= 10">
+            {{ rejetForms[d.id].motif.length }} / 10 min
           </span>
-          <div class="rejet-alert" *ngIf="rejetError">{{ rejetError }}</div>
-          <button
-            class="btn btn-sm btn-danger"
-            (click)="confirmerRejet(demande)"
-            [disabled]="motifRejet.trim().length < 10">
-            Confirmer le rejet
+          <div class="rejet-alert" *ngIf="rejetForms[d.id].error">{{ rejetForms[d.id].error }}</div>
+          <button class="btn btn-danger btn-sm"
+                  [disabled]="rejetForms[d.id].motif.length < 10 || rejetForms[d.id].loading"
+                  (click)="confirmerRejet(d.id)">
+            {{ rejetForms[d.id].loading ? 'Envoi...' : 'Confirmer le rejet' }}
           </button>
         </div>
       </div>
