@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://socialcare-api.onrender.com/api' // ← À remplacer par ton URL Render
+  apiUrl: 'https://assistance-social.onrender.com' // Pas de slash (/) à la fin
 };
