@@ -14,7 +14,11 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 SECRET_KEY = config('SECRET_KEY', default='g_nc9gZ92SD-pzKg4TbkxSu2jVJ4O4ZFg_zl98AQRKxk9cT4GGq7QjafWa5fRy2c_2g')
 
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [
+    'assistance-social.onrender.com', # <-- L'URL exacte de votre app Render
+    'localhost',
+    '127.0.0.1'
+]
 
 # Application definition
 INSTALLED_APPS = [
