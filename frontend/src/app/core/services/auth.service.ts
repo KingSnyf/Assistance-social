@@ -9,6 +9,15 @@ export interface LoginResponse {
   refresh: string;
 }
 
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  password: string;
+  password2: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private apiUrl = `${environment.apiUrl}/auth`;
@@ -25,18 +34,16 @@ export class AuthService {
     );
   }
 
+  register(payload: RegisterPayload): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/register/`, payload);
+  }
+
   refreshToken(): Observable<LoginResponse> {
     const refresh = this.getRefreshToken();
-    if (!refresh) {
-      return of({ access: '', refresh: '' });
-    }
-
+    if (!refresh) return of({ access: '', refresh: '' });
     return this.http.post<LoginResponse>(`${this.apiUrl}/refresh/`, { refresh }).pipe(
       tap(res => this.setSessionTokens(res.access, res.refresh)),
-      catchError(() => {
-        this.logout();
-        return of({ access: '', refresh: '' });
-      })
+      catchError(() => { this.logout(); return of({ access: '', refresh: '' }); })
     );
   }
 
@@ -52,36 +59,18 @@ export class AuthService {
     this.authState.next(true);
   }
 
-  getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
-  }
-
-  getRefreshToken(): string | null {
-    return localStorage.getItem(this.refreshTokenKey);
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.getToken();
-  }
-
-  getUserRole(): string {
-    return this.getTokenClaim('role', 'citoyen');
-  }
-
-  getUsername(): string {
-    return this.getTokenClaim('username', 'Utilisateur');
-  }
+  getToken(): string | null        { return localStorage.getItem(this.tokenKey); }
+  getRefreshToken(): string | null { return localStorage.getItem(this.refreshTokenKey); }
+  isAuthenticated(): boolean       { return !!this.getToken(); }
+  getUserRole(): string            { return this.getTokenClaim('role', 'citoyen'); }
+  getUsername(): string            { return this.getTokenClaim('username', 'Utilisateur'); }
 
   private getTokenClaim<T>(claim: string, fallback: T): T {
     const token = this.getToken();
-    if (!token) {
-      return fallback;
-    }
+    if (!token) return fallback;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload?.[claim] ?? fallback;
-    } catch {
-      return fallback;
-    }
+    } catch { return fallback; }
   }
 }

@@ -1,11 +1,15 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';  // ← IMPORTANT : importer RouterOutlet
+import { RouterOutlet } from '@angular/router';
+import { NotificationsComponent } from './core/components/notifications/notifications.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],  // ← IMPORTANT : déclarer RouterOutlet dans imports
-  template: `<router-outlet></router-outlet>`  // ← IMPORTANT : c'est ici que les pages s'affichent
+  imports: [RouterOutlet, NotificationsComponent],
+  template: `
+    <router-outlet></router-outlet>
+    <app-notifications></app-notifications>
+  `
 })
 export class AppComponent {
   title = 'SocialCare';

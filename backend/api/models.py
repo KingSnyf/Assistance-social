@@ -1,10 +1,8 @@
-# api/models.py
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator
 import uuid
 
-# Choix pour les statuts et types
 STATUT_CHOICES = [
     ('soumise', '📝 Soumise'),
     ('en_cours', '⏳ En cours'),
@@ -26,9 +24,14 @@ URGENCE_CHOICES = [
     ('urgent', '🔴 Urgent'),
 ]
 
+ROLE_CHOICES = [
+    ('admin', 'Administrateur'),
+    ('agent', 'Agent Social'),
+    ('citoyen', 'Citoyen'),
+]
+
 
 class Beneficiaire(models.Model):
-    """Personne bénéficiant de l'aide sociale"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     prenom = models.CharField(max_length=100)
     nom = models.CharField(max_length=100)
@@ -38,16 +41,13 @@ class Beneficiaire(models.Model):
     nationalite = models.CharField(max_length=100, default='Non spécifiée', blank=True)
     pays_residence = models.CharField(max_length=100)
     situation_familiale = models.CharField(max_length=100, blank=True, null=True)
-    revenus_mensuels = models.DecimalField(
-        max_digits=10, decimal_places=2, 
-        null=True, blank=True,
-        validators=[MinValueValidator(0)]
-    )
+    revenus_mensuels = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    # Liaison avec l'utilisateur Django (optionnel pour les citoyens inscrits)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='beneficiaires')
+    # ✅ 1 User = 1 Bénéficiaire
+    # Remets ça temporairement :
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='beneficiaire', null=True, blank=True)
     
     class Meta:
         ordering = ['nom', 'prenom']
@@ -59,29 +59,23 @@ class Beneficiaire(models.Model):
 
 
 class Demande(models.Model):
-    """Demande d'aide sociale soumise par un bénéficiaire"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reference = models.CharField(max_length=20, unique=True, editable=False)
     beneficiaire = models.ForeignKey(Beneficiaire, on_delete=models.CASCADE, related_name='demandes')
     type_aide = models.CharField(max_length=20, choices=TYPE_AIDE_CHOICES)
-    montant_demande = models.DecimalField(
-        max_digits=10, decimal_places=2,
-        validators=[MinValueValidator(0)]
-    )
+    montant_demande = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     motif = models.TextField()
     urgence = models.CharField(max_length=10, choices=URGENCE_CHOICES, default='normal')
     statut = models.CharField(max_length=15, choices=STATUT_CHOICES, default='soumise')
-    agent_assigne = models.ForeignKey(
-        User, on_delete=models.SET_NULL, 
-        null=True, blank=True, related_name='demandes_assignees'
-    )
-    owner = models.ForeignKey(
-        User, on_delete=models.CASCADE, 
-        related_name='demandes_possedees'  # Pour filtrage par propriétaire
-    )
+    
+    # ✅ Champs optionnels pour éviter les erreurs NOT NULL
+    motif_rejet = models.TextField(blank=True, null=True, default='')
+    notes_internes = models.TextField(blank=True, null=True, default='')
+    
+    agent_assigne = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='demandes_assignees')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='demandes_possedees')
     date_soumission = models.DateTimeField(auto_now_add=True)
     date_traitement = models.DateTimeField(null=True, blank=True)
-    notes_internes = models.TextField(blank=True)
     
     class Meta:
         ordering = ['-date_soumission']
@@ -89,10 +83,9 @@ class Demande(models.Model):
         verbose_name_plural = 'Demandes'
     
     def save(self, *args, **kwargs):
-        # Génération automatique de la référence si nouvelle demande
         if not self.reference:
-            num = Demande.objects.count() + 1
-            self.reference = f"SC-{num:04d}"
+            unique_id = str(self.id).split('-')[0].upper()
+            self.reference = f"SC-{unique_id}"
         super().save(*args, **kwargs)
     
     def __str__(self):
@@ -100,14 +93,10 @@ class Demande(models.Model):
 
 
 class Intervention(models.Model):
-    """Action concrète d'aide réalisée suite à une demande approuvée"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     demande = models.OneToOneField(Demande, on_delete=models.CASCADE, related_name='intervention')
     type_intervention = models.CharField(max_length=20, choices=TYPE_AIDE_CHOICES)
-    montant_accorde = models.DecimalField(
-        max_digits=10, decimal_places=2,
-        validators=[MinValueValidator(0)]
-    )
+    montant_accorde = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     date_realisation = models.DateField()
     description = models.TextField(blank=True)
     document_justificatif = models.FileField(upload_to='interventions/', blank=True, null=True)
@@ -122,7 +111,6 @@ class Intervention(models.Model):
 
 
 class Document(models.Model):
-    """Pièce justificative associée à une demande"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     demande = models.ForeignKey(Demande, on_delete=models.CASCADE, related_name='documents')
     type_document = models.CharField(max_length=100)
@@ -138,18 +126,11 @@ class Document(models.Model):
     
     def __str__(self):
         return f"{self.type_document} — {self.demande.reference}"
-    
-ROLE_CHOICES = [
-    ('admin', 'Administrateur'),
-    ('agent', 'Agent Social'),
-    ('citoyen', 'Citoyen'),
-    ('beneficiaire', 'Bénéficiaire'),
-]
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='citoyen')
     
     def __str__(self):
-        return f"{self.user.username} - {self.get_role_display()}"    
-    
+        return f"{self.user.username} - {self.get_role_display()}"

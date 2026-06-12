@@ -1,0 +1,98 @@
+<div class="demandes-container">
+  <div class="header">
+    <h1>Gestion des Demandes</h1>
+    <button *ngIf="isAdminOrAgent" class="btn btn-primary" routerLink="/demandes/nouvelle">
+      + Nouvelle Demande
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Chargement des demandes...</p>
+  </div>
+
+  <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+
+  <div *ngIf="!loading && demandes.length === 0" class="empty-state">
+    <p>Aucune demande trouvée.</p>
+  </div>
+
+  <div *ngIf="!loading && demandes.length > 0" class="demandes-list">
+    <div class="demande-card" *ngFor="let demande of demandes">
+
+      <div class="demande-header">
+        <span class="reference">{{ demande.reference }}</span>
+        <span class="statut" [ngClass]="'statut-' + demande.statut">
+          {{ demande.statut | uppercase }}
+        </span>
+      </div>
+
+      <div class="demande-body">
+        <p><strong>Bénéficiaire :</strong> {{ demande.beneficiaire_prenom }} {{ demande.beneficiaire_nom }}</p>
+        <p><strong>Type d'aide :</strong> {{ demande.type_aide }}</p>
+        <p><strong>Montant :</strong> {{ demande.montant_demande | number:'1.0-0' }} FCFA</p>
+        <p><strong>Urgence :</strong> {{ demande.urgence }}</p>
+        <p><strong>Date :</strong> {{ demande.date_soumission | date:'dd MMM yyyy' }}</p>
+        <div *ngIf="demande.motif_rejet" class="motif-rejet">
+          <strong>Motif de rejet :</strong> {{ demande.motif_rejet }}
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="demande-actions">
+        <!-- Voir détails : visible par tous -->
+        <button class="btn btn-sm btn-info" [routerLink]="['/demandes', demande.id]">
+          Voir détails
+        </button>
+
+        <!-- Actions réservées admin/agent -->
+        <ng-container *ngIf="isAdminOrAgent">
+          <button
+            *ngIf="demande.statut === 'soumise'"
+            class="btn btn-sm btn-warning"
+            (click)="prendreEnCharge(demande.id)">
+            Prendre en charge
+          </button>
+
+          <button
+            *ngIf="demande.statut === 'soumise' || demande.statut === 'en_cours'"
+            class="btn btn-sm btn-success"
+            (click)="approuverDemande(demande.id)">
+            Approuver
+          </button>
+
+          <button
+            *ngIf="demande.statut === 'soumise' || demande.statut === 'en_cours'"
+            class="btn btn-sm btn-danger"
+            (click)="toggleRejetForm(demande.id)">
+            {{ showRejetFormId === demande.id ? 'Annuler' : 'Rejeter' }}
+          </button>
+        </ng-container>
+      </div>
+
+      <!-- Formulaire rejet inline -->
+      <div class="rejet-form" *ngIf="isAdminOrAgent && showRejetFormId === demande.id">
+        <label>Motif du rejet <span class="req">*</span></label>
+        <textarea
+          [(ngModel)]="motifRejet"
+          placeholder="Expliquez la raison du rejet (min. 10 caractères)…"
+          rows="3"
+          class="rejet-textarea">
+        </textarea>
+        <div class="rejet-meta">
+          <span class="char-count" [class.error]="motifRejet.trim().length > 0 && motifRejet.trim().length < 10">
+            {{ motifRejet.trim().length }} / 10 min
+          </span>
+          <div class="rejet-alert" *ngIf="rejetError">{{ rejetError }}</div>
+          <button
+            class="btn btn-sm btn-danger"
+            (click)="confirmerRejet(demande)"
+            [disabled]="motifRejet.trim().length < 10">
+            Confirmer le rejet
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

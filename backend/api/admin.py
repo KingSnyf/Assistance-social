@@ -97,14 +97,14 @@ class DemandeAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        if request.user.groups.filter(name='Agents').exists():
+        if hasattr(request.user, 'profile') and request.user.profile.role in ['admin', 'agent']:
             return qs.filter(agent_assigne=request.user)
         return qs.filter(owner=request.user)
     
     def save_model(self, request, obj, form, change):
         if obj.statut in ['approuvee', 'rejetee'] and not obj.date_traitement:
             obj.date_traitement = timezone.now()
-        if not obj.agent_assigne and request.user.groups.filter(name='Agents').exists():
+        if not obj.agent_assigne and hasattr(request.user, 'profile') and request.user.profile.role in ['admin', 'agent']:
             obj.agent_assigne = request.user
         super().save_model(request, obj, form, change)
 

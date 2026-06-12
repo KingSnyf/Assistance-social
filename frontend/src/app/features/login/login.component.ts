@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <div class="login-page">
       <div class="login-left">
@@ -103,9 +103,11 @@ import { CommonModule } from '@angular/common';
             </button>
           </form>
 
-          <div class="demo-credentials">
-            <span class="demo-label">Compte démo</span>
-            <code>admin / admin123</code>
+          
+
+          <div style="text-align:center;margin-top:20px;font-size:14px;color:#6b7280">
+            Pas encore de compte ?
+            <a routerLink="/register" style="color:#4f46e5;font-weight:500;text-decoration:none;margin-left:4px">Créer un compte</a>
           </div>
         </div>
       </div>

@@ -19,6 +19,8 @@ export interface Demande {
   agent_assigne?: number | null;
   date_soumission: string;
   date_traitement?: string | null;
+  motif_rejet?: string;
+  notes_internes?: string;
 }
 
 export interface CreateDemandeDto {
@@ -76,8 +78,8 @@ export class DemandeService {
     return this.http.post<{ message: string }>(`${this.apiUrl}${id}/approuver/`, {}).pipe(catchError(this.handleError));
   }
 
-  rejeterDemande(id: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}${id}/rejeter/`, {}).pipe(catchError(this.handleError));
+  rejeterDemande(id: string, motif: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}${id}/rejeter/`, { motif_rejet: motif }).pipe(catchError(this.handleError));
   }
 
   prendreEnChargeDemande(id: string): Observable<{ message: string }> {

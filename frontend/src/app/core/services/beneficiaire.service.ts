@@ -10,6 +10,17 @@ export interface Beneficiaire {
   email?: string;
   telephone?: string;
   pays_residence: string;
+  // Champs ajoutés pour detail-beneficiaire
+  date_naissance?: string | null;
+  nationalite?: string;
+  situation_familiale?: 'celibataire' | 'marie' | 'divorce' | 'veuf' | string;
+  revenus_mensuels?: number | null;
+  created_at?: string;
+  adresse?: string;
+  ville?: string;
+  code_postal?: string;
+  notes?: string;
+  actif?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -22,15 +33,20 @@ export class BeneficiaireService {
     return this.http.get<any>(this.apiUrl);
   }
 
+  // Méthode manquante — récupère un bénéficiaire par son id
+  getBeneficiaire(id: string): Observable<Beneficiaire> {
+    return this.http.get<Beneficiaire>(`${this.apiUrl}${id}/`);
+  }
+
   createBeneficiaire(data: Partial<Beneficiaire>): Observable<Beneficiaire> {
     return this.http.post<Beneficiaire>(this.apiUrl, data);
   }
 
   updateBeneficiaire(id: string, data: Partial<Beneficiaire>): Observable<Beneficiaire> {
-    return this.http.patch<Beneficiaire>(`${this.apiUrl}/${id}`, data);
+    return this.http.patch<Beneficiaire>(`${this.apiUrl}${id}/`, data);
   }
 
   deleteBeneficiaire(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}${id}/`);
   }
 }
