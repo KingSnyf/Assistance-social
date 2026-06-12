@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
+SECRET_KEY = config('SECRET_KEY', default='g_nc9gZ92SD-pzKg4TbkxSu2jVJ4O4ZFg_zl98AQRKxk9cT4GGq7QjafWa5fRy2c_2g')
 
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
@@ -143,13 +143,10 @@ SIMPLE_JWT = {
 }
 
 # 🌍 CORS Configuration (FRONTEND ↔ BACKEND)
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:4200,http://127.0.0.1:4200'
-).split(',')
-
-# Autoriser l'envoi de credentials (tokens, cookies)
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "https://assistance-social.vercel.app/", # Votre URL Vercel
+]
+CORS_ALLOW_CREDENTIALS = True # Indispensable si vous utilisez l'authentification par session/cookies de Django
 
 # Headers autorisés (pour les requêtes preflight OPTIONS)
 CORS_ALLOW_HEADERS = [
